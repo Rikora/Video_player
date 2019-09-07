@@ -21,6 +21,8 @@ namespace vp
 		void update(sf::Time dt);
 
 		sf::RenderWindow m_window;
-		sf::CircleShape m_shape;
+		sf::Texture m_texture;
+		sf::Sprite m_sprite;
+		std::vector<sf::Uint8> m_pixels;
 	};
 }
