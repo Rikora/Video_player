@@ -15,6 +15,7 @@ namespace vp
 		void run();
 
 	private:
+		void loadVideo();
 		void render();
 		void pollEvents();
 		void update(sf::Time dt);
