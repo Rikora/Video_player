@@ -34,22 +34,22 @@ Video::~Video()
 
 bool Video::LoadFromFile(const string& filename)
 {
-    CloseVideo();
     m_sFilename = filename;
-    const char * const file = m_sFilename.c_str();
+    const char* file = m_sFilename.c_str();
 
-    if(avformat_open_input(&m_pFormatCtx, file, NULL,NULL) != 0)
+    if(avformat_open_input(&m_pFormatCtx, file, NULL, NULL) != 0)
     {
         cout << "Unexisting file!" << endl;;
         return false;
     }
 
-    if(avformat_find_stream_info(m_pFormatCtx,NULL) < 0)
+    if(avformat_find_stream_info(m_pFormatCtx, NULL) < 0)
     {
         cout << "Couldn't find stream information!" << endl;
         return false;
     }
 
+	// Print info
     av_dump_format(m_pFormatCtx, 0, file, 0);
 
     m_iVideoStream = -1;
@@ -71,20 +71,18 @@ bool Video::LoadFromFile(const string& filename)
 	avcodec_parameters_to_context(m_pCodecCtx, m_pFormatCtx->streams[m_iVideoStream]->codecpar);
 
     AVRational r = m_pFormatCtx->streams[m_iVideoStream]->avg_frame_rate;
-    AVRational r2 = m_pFormatCtx->streams[m_iVideoStream]->r_frame_rate;
 
-    if ((!r.num || !r.den) &&
-        (!r2.num || !r2.den))
+    if ((!r.num || !r.den))
     {
         std::cerr << "Video_video::Initialize() - unable to get the video frame rate. Using 25 fps." << std::endl;
         m_fSecondsPerFrame = 1.f / 25;
     }
     else
     {
-        if (r.num && r.den)
-            m_fSecondsPerFrame = 1.f/((float)r.num / r.den);
-        else
-            m_fSecondsPerFrame = 1.f/((float)r2.num / r2.den);
+		if (r.num && r.den)
+		{
+			m_fSecondsPerFrame = 1.f / ((float)r.num / r.den);
+		}
     }
 
     if(m_pCodec == NULL)
@@ -154,13 +152,15 @@ void Video::LoadNextFrame()
     {
 		av_packet_unref(&m_Packet);
         int result = av_read_frame(m_pFormatCtx, &m_Packet);
-        if (result < 0)
+
+		// Result < 0 on error or if the movie has ended
+        /*if (result < 0)
         {
             CloseVideo();
             LoadFromFile(m_sFilename);
             m_fTimePassedSinceLastFrameUpdate = 0;
             return;
-        }
+        }*/
     } 
 	while (m_Packet.stream_index != m_iVideoStream);
 
@@ -175,7 +175,6 @@ void Video::LoadNextFrame()
 			m_pCodecCtx->height, m_pFrameRGB->data, m_pFrameRGB->linesize);
         m_bImageNeedsUpdate = true;
     }
-
 }
 
 void Video::UpdateImage()

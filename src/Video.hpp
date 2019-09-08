@@ -9,6 +9,7 @@ using namespace std;
 typedef unsigned int nuint;
 
 #define __STDC_CONSTANT_MACROS
+
 extern "C"
 {
 	#include <ffmpeg/ffmpeg.h>
