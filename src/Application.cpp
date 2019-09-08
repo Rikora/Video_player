@@ -8,76 +8,41 @@ using namespace ffmpegcpp;
 namespace vp
 {
 	Application::Application() : 
-	m_window(sf::VideoMode(WIDTH, HEIGHT), "Video Player", sf::Style::Close, sf::ContextSettings(0, 0, 8))
+	m_window(sf::VideoMode(WIDTH, HEIGHT), "Video Player", sf::Style::Close, sf::ContextSettings(0, 0, 8)),
+	m_img_convert_ctx(nullptr)
 	{
+		// Frame limit should be the same as the video frame limit!
 		m_window.setVerticalSyncEnabled(true);
 
-		// Create texture and fill with red color
-		m_texture.create(100, 100);
-		m_pixels.resize(100 * 100 * 4); // Must be RGBA (*4)
+		loadVideo();
 
-		for (size_t i = 0; i < m_pixels.size(); i += 4)
-		{
-			m_pixels[i] = 255;
-			m_pixels[i+1] = 0;
-			m_pixels[i+2] = 0;
-			m_pixels[i+3] = 255;
-		}
-
+		// Apply texture
 		m_sprite.setTexture(m_texture);
-		m_sprite.setPosition(sf::Vector2f(200.f, 100.f));
+	}
 
-		//loadVideo();
+	Application::~Application()
+	{
+		sws_freeContext(m_img_convert_ctx);
 	}
 
 	void Application::loadVideo()
 	{
-		// TODO: pick the best video stream
-		// TODO: create sf::texture with width and height from stream
-		// Render sprite, add texture to sprite and update texture
-
 		// Load video
-		auto demuxer = Demuxer("samples/big_buck_bunny.mp4");
+		m_demuxer = std::make_unique<Demuxer>("samples/big_buck_bunny.mp4");
+		m_fileSink = std::make_unique<VideoFrame>();
 
-		ContainerInfo info = demuxer.GetInfo();
-		VideoStreamInfo stream = info.videoStreams[0];
-		
-		// Prepare info
-		/*m_pFrameRGB = av_frame_alloc();
-		int numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGBA, stream.width, stream.height, 1);
-		m_pBuffer = (sf::Uint8*)av_malloc(numBytes * sizeof(sf::Uint8));
+		m_demuxer->DecodeBestVideoStream(m_fileSink.get());
 
-		avpicture_fill((AVPicture*)m_pFrameRGB, m_pBuffer, AV_PIX_FMT_RGBA, stream.width, stream.height);*/
+		// Push a small amount of frames through the pipeline
+		m_demuxer->PreparePipeline();
 
-		// 1. Create the texture
+		// Create texture from info
+		VideoStreamInfo stream = m_demuxer->GetInfo().videoStreams[0];
 		m_texture.create(stream.width, stream.height);
 
-		// 2. Update the image texture with content
-
-		// Need to decode the video to get info for the pixel data?
-
-		// Next frame...
-		/*demuxer.PreparePipeline();
-		demuxer.Step();*/
-	
-		// Print the data similar to ffmpeg.exe.
-		/*std::cout << "Input " << info.format->name << " from '" << demuxer.GetFileName() << "'" << std::endl;
-
-		std::cout << "Video streams:" << std::endl;
-		for (int i = 0; i < info.videoStreams.size(); ++i)
-		{
-			VideoStreamInfo stream = info.videoStreams[i];
-			
-			std::cout << "Stream #" << (i + 1)
-				<< ": codec " << stream.codec->name
-				<< ", pixel format " << stream.formatName
-				<< ", resolution " << stream.width << "x" << stream.height
-				<< ", bit rate " << stream.bitRate << "kb/s"
-				<< ", fps " << ((float)stream.frameRate.num / (float)stream.frameRate.den)
-				<< ", time base " << stream.timeBase.num << "/" << stream.timeBase.den
-				<< ", " << demuxer.GetFrameCount(stream.id) << " frames"
-				<< std::endl;
-		}*/
+		// Create sws context
+		m_img_convert_ctx = sws_getContext(stream.width, stream.height, stream.format,
+			stream.width, stream.height, AV_PIX_FMT_RGBA, SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
 	}
 
 	void Application::run()
@@ -102,12 +67,21 @@ namespace vp
 			{
 				m_window.close();
 			}
+
+			if ((event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Right))
+			{
+				// TODO: check if we have not reached the last frame!
+
+				// Go to the next frame
+				m_demuxer->Step();
+				// TODO: call avcodec_decode_video2? and sws_scale
+			}
 		}
 	}
 
 	void Application::update(sf::Time dt)
 	{	
-		m_texture.update(m_pixels.data());
+		m_texture.update(m_fileSink->getPixels().data());
 	}
 
 	void Application::render()

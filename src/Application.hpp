@@ -1,9 +1,10 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include "VideoFrame.hpp"
 
-#define WIDTH 800U
-#define HEIGHT 600U
+#define WIDTH 640U
+#define HEIGHT 360U
 
 namespace vp
 {
@@ -11,6 +12,7 @@ namespace vp
 	{
 	public:
 		Application();
+		~Application();
 
 		void run();
 
@@ -23,6 +25,8 @@ namespace vp
 		sf::RenderWindow m_window;
 		sf::Texture m_texture;
 		sf::Sprite m_sprite;
-		std::vector<sf::Uint8> m_pixels;
+		std::unique_ptr<Demuxer> m_demuxer;
+		std::unique_ptr<VideoFrame> m_fileSink;
+		SwsContext* m_img_convert_ctx;
 	};
 }
