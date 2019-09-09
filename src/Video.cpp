@@ -91,7 +91,7 @@ bool Video::LoadFromFile(const string& filename)
         return false;
     }
 
-    if(avcodec_open2(m_pCodecCtx, m_pCodec,NULL) < 0)
+    if(avcodec_open2(m_pCodecCtx, m_pCodec, NULL) < 0)
     {
         cout << "Could not open Codec Context" << endl;
         return false;
