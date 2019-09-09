@@ -8,12 +8,20 @@ namespace vp
 	m_pVideoStream(NULL),
 	m_pCodec(NULL),
 	m_pCodecCtx(NULL),
-	m_pSwsContext(NULL)
+	m_pSwsContext(NULL),
+	m_pBuffer(NULL),
+	m_pPrevFrame(NULL),
+	m_pCurrentFrame(NULL)
 	{
+		m_pPrevFrame = av_frame_alloc();
+		m_pCurrentFrame = av_frame_alloc();
 	}
 
 	Demuxer::~Demuxer()
 	{
+		av_free(m_pBuffer);
+		av_free(m_pCurrentFrame);
+		av_free(m_pPrevFrame);
 		avcodec_close(m_pCodecCtx);
 		avformat_close_input(&m_pFormatCtx);
 		sws_freeContext(m_pSwsContext);
@@ -74,6 +82,8 @@ namespace vp
 			return false;
 		}
 
+		createBuffer();
+
 		return true;
 	}
 
@@ -90,6 +100,11 @@ namespace vp
 	int Demuxer::getHeight() const
 	{
 		return m_pCodecCtx->height;
+	}
+
+	sf::Uint8* Demuxer::getBuffer() const
+	{
+		return m_pBuffer;
 	}
 
 	void Demuxer::createDecoderAndContext()
@@ -112,5 +127,14 @@ namespace vp
 				NULL, 
 				NULL, 
 				NULL);
+	}
+
+	void Demuxer::createBuffer()
+	{
+		auto size = av_image_get_buffer_size(AV_PIX_FMT_RGBA, m_pCodecCtx->width, m_pCodecCtx->height, 32);
+		m_pBuffer = (sf::Uint8*)av_malloc(size * sizeof(sf::Uint8));
+
+		av_image_alloc(m_pCurrentFrame->data, m_pCurrentFrame->linesize, m_pCodecCtx->width, m_pCodecCtx->height, AV_PIX_FMT_RGBA, 32);
+		av_image_fill_arrays(&m_pBuffer, m_pCurrentFrame->linesize, *m_pCurrentFrame->data, AV_PIX_FMT_RGBA, m_pCodecCtx->width, m_pCodecCtx->height, 32);
 	}
 }
