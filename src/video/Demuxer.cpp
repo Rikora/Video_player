@@ -11,7 +11,10 @@ namespace vp
 	m_pSwsContext(NULL),
 	m_pBuffer(NULL),
 	m_pPrevFrame(NULL),
-	m_pCurrentFrame(NULL)
+	m_pCurrentFrame(NULL),
+	m_frameRate(0.f),
+	m_frameFinished(false),
+	m_updateTimer(sf::Time::Zero)
 	{
 		m_pPrevFrame = av_frame_alloc();
 		m_pCurrentFrame = av_frame_alloc();
@@ -57,6 +60,7 @@ namespace vp
 
 		if (m_pVideoStream == NULL)
 		{
+			std::cout << "ERROR: Could not locate an existing video stream!" << std::endl;
 			return false;
 		}
 
@@ -74,6 +78,7 @@ namespace vp
 			return false;
 		}
 
+		calculateFrameRate();
 		createSwsContext();
 
 		if (m_pSwsContext == NULL)
@@ -83,13 +88,57 @@ namespace vp
 		}
 
 		createBuffer();
+		m_texture.create(getWidth(), getHeight());
+
+		// TODO: push a few frames through from the beginning?
 
 		return true;
 	}
 
-	float Demuxer::getFrameRate()
+	void Demuxer::update(sf::Time dt)
 	{
-		return 0.f;
+		m_updateTimer += dt;
+
+		if (m_frameFinished)
+		{
+			updateTexture();
+		}
+
+		if (m_updateTimer.asMilliseconds() > (1000.f / m_frameRate))
+		{
+			m_updateTimer = sf::Time::Zero;
+			step();
+		}
+	}
+
+	void Demuxer::step()
+	{
+		do
+		{
+			// av_read_frame < 0 on error or if the video has ended
+			av_packet_unref(&m_pVideoStream->attached_pic);
+			av_read_frame(m_pFormatCtx, &m_pVideoStream->attached_pic);
+
+		} while (m_pVideoStream->attached_pic.stream_index != m_pVideoStream->index);
+
+		avcodec_send_packet(m_pCodecCtx, &m_pVideoStream->attached_pic);
+
+		if (avcodec_receive_frame(m_pCodecCtx, m_pPrevFrame) == 0)
+		{
+			sws_scale(m_pSwsContext, m_pPrevFrame->data, m_pPrevFrame->linesize, 0, 
+				m_pCodecCtx->height, m_pCurrentFrame->data, m_pCurrentFrame->linesize);
+			m_frameFinished = true;
+		}
+	}
+
+	bool Demuxer::isFrameFinished() const
+	{
+		return m_frameFinished;
+	}
+
+	float Demuxer::getFrameRate() const
+	{
+		return m_frameRate;
 	}
 
 	int Demuxer::getWidth() const
@@ -105,6 +154,11 @@ namespace vp
 	sf::Uint8* Demuxer::getBuffer() const
 	{
 		return m_pBuffer;
+	}
+
+	sf::Texture& Demuxer::getTexture()
+	{
+		return m_texture;
 	}
 
 	void Demuxer::createDecoderAndContext()
@@ -136,5 +190,29 @@ namespace vp
 
 		av_image_alloc(m_pCurrentFrame->data, m_pCurrentFrame->linesize, m_pCodecCtx->width, m_pCodecCtx->height, AV_PIX_FMT_RGBA, 32);
 		av_image_fill_arrays(&m_pBuffer, m_pCurrentFrame->linesize, *m_pCurrentFrame->data, AV_PIX_FMT_RGBA, m_pCodecCtx->width, m_pCodecCtx->height, 32);
+	}
+
+	void Demuxer::calculateFrameRate()
+	{
+		AVRational r = m_pVideoStream->avg_frame_rate;
+
+		if (!r.num || !r.den)
+		{
+			std::cout << "ERROR: Unable to get the video frame rate. Using 25 fps." << std::endl;
+			m_frameRate = 25.f;
+		}
+		else
+		{
+			if (r.num && r.den)
+			{
+				m_frameRate = static_cast<float>(r.num / r.den);
+			}
+		}
+	}
+
+	void Demuxer::updateTexture()
+	{
+		m_texture.update(m_pBuffer);
+		m_frameFinished = false;
 	}
 }

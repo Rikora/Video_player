@@ -126,7 +126,7 @@ bool Video::LoadFromFile(const string& filename)
 
     m_Texture.create(GetWidth(), GetHeight());
 
-    Update(10000);
+    //Update(10000);
 
     return true;
 }
@@ -150,8 +150,8 @@ void Video::LoadNextFrame()
 {
     do
     {
-		av_packet_unref(&m_Packet);
-        int result = av_read_frame(m_pFormatCtx, &m_Packet);
+		av_packet_unref(&m_pFormatCtx->streams[m_iVideoStream]->attached_pic);
+        int result = av_read_frame(m_pFormatCtx, &m_pFormatCtx->streams[m_iVideoStream]->attached_pic);
 
 		// Result < 0 on error or if the movie has ended
         /*if (result < 0)
@@ -162,11 +162,11 @@ void Video::LoadNextFrame()
             return;
         }*/
     } 
-	while (m_Packet.stream_index != m_iVideoStream);
+	while (m_pFormatCtx->streams[m_iVideoStream]->attached_pic.stream_index != m_iVideoStream);
 
     int frameFinished = 0;
 
-	avcodec_send_packet(m_pCodecCtx, &m_Packet);
+	avcodec_send_packet(m_pCodecCtx, &m_pFormatCtx->streams[m_iVideoStream]->attached_pic);
 	frameFinished = avcodec_receive_frame(m_pCodecCtx, m_pFrame);
 
     if (frameFinished == 0)
