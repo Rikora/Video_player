@@ -1,10 +1,7 @@
 #pragma once
 
-#include <SFML/Graphics.hpp>
-#include "Video.hpp"
-
-#define WIDTH 640U
-#define HEIGHT 360U
+//#include <SFML/Graphics.hpp>
+#include "video/Demuxer.hpp"
 
 namespace vp
 {
@@ -22,6 +19,6 @@ namespace vp
 
 		sf::RenderWindow m_window;
 		sf::Sprite m_sprite;
-		Video m_video;
+		std::unique_ptr<video::Demuxer> m_pDemuxer;
 	};
 }

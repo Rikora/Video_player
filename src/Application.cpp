@@ -3,14 +3,14 @@
 namespace vp
 {
 	Application::Application() : 
-	m_window(sf::VideoMode(WIDTH, HEIGHT), "Video Player", sf::Style::Close, sf::ContextSettings(0, 0, 8)),
-	m_video("samples/big_buck_bunny.mp4")
+	m_pDemuxer(std::make_unique<video::Demuxer>())
 	{
-		// Frame limit should be the same as the video frame limit!
+		m_pDemuxer->loadFromFile("samples/big_buck_bunny.mp4");
+
+		m_window.create(sf::VideoMode(m_pDemuxer->getWidth(), m_pDemuxer->getHeight()), "Video Player", sf::Style::Close, sf::ContextSettings(0, 0, 8));
 		m_window.setVerticalSyncEnabled(true);
 
-		// Apply texture
-		m_sprite.setTexture(m_video);
+		m_sprite.setTexture(m_pDemuxer->getTexture());
 	}
 
 	void Application::run()
@@ -40,7 +40,7 @@ namespace vp
 
 	void Application::update(sf::Time dt)
 	{	
-		m_video.Update(dt.asSeconds());
+		m_pDemuxer->update(dt);
 	}
 
 	void Application::render()

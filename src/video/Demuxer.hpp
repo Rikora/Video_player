@@ -5,11 +5,12 @@ extern "C"
 	#include <ffmpeg/ffmpeg.h>
 }
 
-#include <SFML/Graphics.hpp>
+#include <SFML/Graphics.hpp> // TODO: change this to only required headers
 #include <string>
 
-namespace vp
+namespace vp::video
 {
+	// TODO: add pause, stop, resume, find functionality?
 	class Demuxer
 	{
 	public:
@@ -19,6 +20,7 @@ namespace vp
 		bool loadFromFile(const std::string& file);
 		void update(sf::Time dt);
 		bool isFrameFinished() const;
+		bool isVideoFinished() const;
 		float getFrameRate() const;
 		int getWidth() const;
 		int getHeight() const;
@@ -45,5 +47,6 @@ namespace vp
 		sf::Time m_updateTimer;
 		float m_frameRate;
 		bool m_frameFinished;
+		bool m_videoFinished;
 	};
 }

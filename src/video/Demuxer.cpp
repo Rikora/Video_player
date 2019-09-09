@@ -1,7 +1,7 @@
 #include "Demuxer.hpp"
 #include <iostream>
 
-namespace vp
+namespace vp::video
 {
 	Demuxer::Demuxer() :
 	m_pFormatCtx(NULL),
@@ -14,7 +14,8 @@ namespace vp
 	m_pCurrentFrame(NULL),
 	m_frameRate(0.f),
 	m_frameFinished(false),
-	m_updateTimer(sf::Time::Zero)
+	m_updateTimer(sf::Time::Zero),
+	m_videoFinished(false)
 	{
 		m_pPrevFrame = av_frame_alloc();
 		m_pCurrentFrame = av_frame_alloc();
@@ -90,7 +91,7 @@ namespace vp
 		createBuffer();
 		m_texture.create(getWidth(), getHeight());
 
-		// TODO: push a few frames through from the beginning?
+		// Note: push a few frames through from the beginning?
 
 		return true;
 	}
@@ -115,9 +116,13 @@ namespace vp
 	{
 		do
 		{
-			// av_read_frame < 0 on error or if the video has ended
 			av_packet_unref(&m_pVideoStream->attached_pic);
-			av_read_frame(m_pFormatCtx, &m_pVideoStream->attached_pic);
+
+			if (av_read_frame(m_pFormatCtx, &m_pVideoStream->attached_pic) < 0)
+			{
+				m_videoFinished = true;
+				return;
+			}
 
 		} while (m_pVideoStream->attached_pic.stream_index != m_pVideoStream->index);
 
@@ -134,6 +139,11 @@ namespace vp
 	bool Demuxer::isFrameFinished() const
 	{
 		return m_frameFinished;
+	}
+
+	bool Demuxer::isVideoFinished() const
+	{
+		return m_videoFinished;
 	}
 
 	float Demuxer::getFrameRate() const
@@ -198,7 +208,7 @@ namespace vp
 
 		if (!r.num || !r.den)
 		{
-			std::cout << "ERROR: Unable to get the video frame rate. Using 25 fps." << std::endl;
+			std::cout << "ERROR: Unable to retrieve video frame rate. Using 25 fps." << std::endl;
 			m_frameRate = 25.f;
 		}
 		else
