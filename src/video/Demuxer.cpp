@@ -14,8 +14,8 @@ namespace vp::video
 	m_pCurrentFrame(NULL),
 	m_frameRate(0.f),
 	m_frameFinished(false),
-	m_updateTimer(sf::Time::Zero),
-	m_videoFinished(false)
+	m_videoFinished(false),
+	m_updateTimer(sf::Time::Zero)
 	{
 		m_pPrevFrame = av_frame_alloc();
 		m_pCurrentFrame = av_frame_alloc();
@@ -42,7 +42,7 @@ namespace vp::video
 
 		if (avformat_find_stream_info(m_pFormatCtx, NULL) < 0)
 		{
-			std::cout << "ERROR: Couldn't find stream information!" << std::endl;
+			std::cout << "ERROR: Could not find stream information!" << std::endl;
 			return false;
 		}
 
@@ -89,7 +89,7 @@ namespace vp::video
 		}
 
 		createBuffer();
-		m_texture.create(getWidth(), getHeight());
+		m_texture.create(m_pCodecCtx->width, m_pCodecCtx->height);
 
 		// Note: push a few frames through from the beginning?
 
@@ -109,30 +109,6 @@ namespace vp::video
 		{
 			m_updateTimer = sf::Time::Zero;
 			step();
-		}
-	}
-
-	void Demuxer::step()
-	{
-		do
-		{
-			av_packet_unref(&m_pVideoStream->attached_pic);
-
-			if (av_read_frame(m_pFormatCtx, &m_pVideoStream->attached_pic) < 0)
-			{
-				m_videoFinished = true;
-				return;
-			}
-
-		} while (m_pVideoStream->attached_pic.stream_index != m_pVideoStream->index);
-
-		avcodec_send_packet(m_pCodecCtx, &m_pVideoStream->attached_pic);
-
-		if (avcodec_receive_frame(m_pCodecCtx, m_pPrevFrame) == 0)
-		{
-			sws_scale(m_pSwsContext, m_pPrevFrame->data, m_pPrevFrame->linesize, 0, 
-				m_pCodecCtx->height, m_pCurrentFrame->data, m_pCurrentFrame->linesize);
-			m_frameFinished = true;
 		}
 	}
 
@@ -208,7 +184,7 @@ namespace vp::video
 
 		if (!r.num || !r.den)
 		{
-			std::cout << "ERROR: Unable to retrieve video frame rate. Using 25 fps." << std::endl;
+			std::cout << "ERROR: Unable to retrieve video frame rate. Framerate set to 25 FPS." << std::endl;
 			m_frameRate = 25.f;
 		}
 		else
@@ -217,6 +193,30 @@ namespace vp::video
 			{
 				m_frameRate = static_cast<float>(r.num / r.den);
 			}
+		}
+	}
+
+	void Demuxer::step()
+	{
+		do
+		{
+			av_packet_unref(&m_pVideoStream->attached_pic);
+
+			if (av_read_frame(m_pFormatCtx, &m_pVideoStream->attached_pic) < 0)
+			{
+				m_videoFinished = true;
+				return;
+			}
+
+		} while (m_pVideoStream->attached_pic.stream_index != m_pVideoStream->index);
+
+		avcodec_send_packet(m_pCodecCtx, &m_pVideoStream->attached_pic);
+
+		if (avcodec_receive_frame(m_pCodecCtx, m_pPrevFrame) == 0)
+		{
+			sws_scale(m_pSwsContext, m_pPrevFrame->data, m_pPrevFrame->linesize, 0,
+				m_pCodecCtx->height, m_pCurrentFrame->data, m_pCurrentFrame->linesize);
+			m_frameFinished = true;
 		}
 	}
 
