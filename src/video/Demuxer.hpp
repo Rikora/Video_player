@@ -28,7 +28,7 @@ namespace vp::video
 		sf::Texture& getTexture();
 
 	private:
-		void createDecoderAndContext();
+		void createDecoderAndContext(AVStream** stream, AVCodecContext** codecCtx);
 		void createSwsContext();
 		void createBuffer();
 		void calculateFrameRate();
@@ -36,9 +36,10 @@ namespace vp::video
 		void step();
 
 		AVFormatContext* m_pFormatCtx;
-		AVCodecContext* m_pCodecCtx;
-		AVCodec* m_pCodec;
+		AVCodecContext* m_pVideoCodecCtx;
+		AVCodecContext* m_pAudioCodecCtx;
 		AVStream* m_pVideoStream;
+		AVStream* m_pAudioStream;
 		AVFrame* m_pPrevFrame;
 		AVFrame* m_pCurrentFrame;
 		SwsContext* m_pSwsContext;
