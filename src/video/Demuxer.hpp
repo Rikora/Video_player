@@ -2,20 +2,25 @@
 
 extern "C"
 {
-	#include <ffmpeg/ffmpeg.h>
+	#include <ffmpeg/ffmpeg.h> // TODO: change this to only required headers
 }
 
 #include <SFML/Graphics.hpp> // TODO: change this to only required headers
+#include <SFML/Audio/SoundStream.hpp>
 #include <string>
 
 namespace vp::video
 {
 	// TODO: add pause, stop, resume, find functionality?
-	class Demuxer
+	class Demuxer : public sf::SoundStream
 	{
 	public:
 		Demuxer();
 		~Demuxer();
+
+		// sf::SoundStream overloads
+		virtual bool onGetData(Chunk& data) override;
+		inline virtual void onSeek(sf::Time timeOffset) override {};
 
 		bool loadFromFile(const std::string& file);
 		void update(sf::Time dt);

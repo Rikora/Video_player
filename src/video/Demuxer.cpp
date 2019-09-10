@@ -60,12 +60,13 @@ namespace vp::video
 			{
 				m_pAudioStream = m_pFormatCtx->streams[i];
 				createDecoderAndContext(&m_pAudioStream, &m_pAudioCodecCtx);
+				initialize(m_pAudioStream->codecpar->channels, m_pAudioStream->codecpar->sample_rate);
 			}
 		}
 
-		if (m_pVideoStream == NULL)
+		if (!m_pVideoStream || !m_pAudioStream)
 		{
-			throw std::runtime_error("Demuxer::loadFromFile - Failed to locate an existing video stream");
+			throw std::runtime_error("Demuxer::loadFromFile - Failed to locate an existing video/audio stream");
 		}
 
 		calculateFrameRate();
@@ -92,6 +93,11 @@ namespace vp::video
 			m_updateTimer = sf::Time::Zero;
 			step();
 		}
+	}
+
+	bool Demuxer::onGetData(Chunk& data)
+	{
+		return false;
 	}
 
 	bool Demuxer::isFrameFinished() const
@@ -135,7 +141,7 @@ namespace vp::video
 		*codecCtx = avcodec_alloc_context3(pCodec);
 		avcodec_parameters_to_context(*codecCtx, stream[0]->codecpar);
 
-		if (pCodec == NULL)
+		if (!pCodec)
 		{
 			throw std::runtime_error("Demuxer::createDecoderAndContext - Unsupported codec");
 		}
@@ -160,7 +166,7 @@ namespace vp::video
 				NULL, 
 				NULL);
 
-		if (m_pSwsContext == NULL)
+		if (!m_pSwsContext)
 		{
 			throw std::runtime_error("Demuxer::createSwsContext - Failed to create sws context");
 		}
