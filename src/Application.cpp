@@ -1,16 +1,26 @@
 #include "Application.hpp"
+#include <iostream>
 
 namespace vp
 {
 	Application::Application() : 
-	m_pDemuxer(std::make_unique<video::Demuxer>())
+	m_demuxer(video::Demuxer())
 	{
-		m_pDemuxer->loadFromFile("samples/big_buck_bunny.mp4");
+		try
+		{
+			m_demuxer.loadFromFile("samples/big_buck_bunny.mp4");
+		}
+		catch (std::exception& e)
+		{
+			std::cout << e.what() << std::endl;
+			system("pause");
+			exit(EXIT_FAILURE);
+		}
 
-		m_window.create(sf::VideoMode(m_pDemuxer->getWidth(), m_pDemuxer->getHeight()), "Video Player", sf::Style::Close, sf::ContextSettings(0, 0, 8));
+		m_window.create(sf::VideoMode(m_demuxer.getWidth(), m_demuxer.getHeight()), "Video Player", sf::Style::Close, sf::ContextSettings(0, 0, 8));
 		m_window.setVerticalSyncEnabled(true);
 
-		m_sprite.setTexture(m_pDemuxer->getTexture());
+		m_sprite.setTexture(m_demuxer.getTexture());
 	}
 
 	void Application::run()
@@ -40,7 +50,7 @@ namespace vp
 
 	void Application::update(sf::Time dt)
 	{	
-		m_pDemuxer->update(dt);
+		m_demuxer.update(dt);
 	}
 
 	void Application::render()

@@ -33,17 +33,14 @@ namespace vp::video
 
 	bool Demuxer::loadFromFile(const std::string& file)
 	{
-		// TODO: replace if statements with exception handling instead?
 		if (avformat_open_input(&m_pFormatCtx, file.c_str(), NULL, NULL) != 0)
 		{
-			std::cout << "ERROR: Unexisting file!" << std::endl;;
-			return false;
+			throw std::runtime_error("Demuxer::loadFromFile - Failed to load: " + file);
 		}
 
 		if (avformat_find_stream_info(m_pFormatCtx, NULL) < 0)
 		{
-			std::cout << "ERROR: Could not find stream information!" << std::endl;
-			return false;
+			throw std::runtime_error("Demuxer::loadFromFile - Failed to locate stream information");
 		}
 
 		// Print info
@@ -61,22 +58,19 @@ namespace vp::video
 
 		if (m_pVideoStream == NULL)
 		{
-			std::cout << "ERROR: Could not locate an existing video stream!" << std::endl;
-			return false;
+			throw std::runtime_error("Demuxer::loadFromFile - Failed to locate an existing video stream");
 		}
 
 		createDecoderAndContext();
 
 		if (m_pCodec == NULL)
 		{
-			std::cout << "ERROR: Unsupported codec!" << std::endl;
-			return false;
+			throw std::runtime_error("Demuxer::loadFromFile - Unsupported codec");
 		}
 
 		if (avcodec_open2(m_pCodecCtx, m_pCodec, NULL) < 0)
 		{
-			std::cout << "ERROR: Could not open codec context!" << std::endl;
-			return false;
+			throw std::runtime_error("Demuxer::loadFromFile - Failed to open codex context");
 		}
 
 		calculateFrameRate();
@@ -84,8 +78,7 @@ namespace vp::video
 
 		if (m_pSwsContext == NULL)
 		{
-			std::cout << "ERROR: Could not create sws context!" << std::endl;
-			return false;
+			throw std::runtime_error("Demuxer::loadFromFile - Failed to create sws context");
 		}
 
 		createBuffer();
@@ -184,7 +177,7 @@ namespace vp::video
 
 		if (!r.num || !r.den)
 		{
-			std::cout << "ERROR: Unable to retrieve video frame rate. Framerate set to 25 FPS." << std::endl;
+			std::cout << "WARNING: Unable to retrieve video frame rate. Frame rate set to 25 FPS" << std::endl;
 			m_frameRate = 25.f;
 		}
 		else
