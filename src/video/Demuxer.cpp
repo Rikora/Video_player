@@ -167,8 +167,10 @@ namespace vp::video
 		auto size = av_image_get_buffer_size(AV_PIX_FMT_RGBA, m_pCodecCtx->width, m_pCodecCtx->height, 32);
 		m_pBuffer = (sf::Uint8*)av_malloc(size * sizeof(sf::Uint8));
 
-		av_image_alloc(m_pCurrentFrame->data, m_pCurrentFrame->linesize, m_pCodecCtx->width, m_pCodecCtx->height, AV_PIX_FMT_RGBA, 32);
-		av_image_fill_arrays(&m_pBuffer, m_pCurrentFrame->linesize, *m_pCurrentFrame->data, AV_PIX_FMT_RGBA, m_pCodecCtx->width, m_pCodecCtx->height, 32);
+		av_image_alloc(m_pCurrentFrame->data, m_pCurrentFrame->linesize, m_pCodecCtx->width, 
+			m_pCodecCtx->height, AV_PIX_FMT_RGBA, 32);
+		av_image_fill_arrays(&m_pBuffer, m_pCurrentFrame->linesize, *m_pCurrentFrame->data, 
+			AV_PIX_FMT_RGBA, m_pCodecCtx->width, m_pCodecCtx->height, 32);
 	}
 
 	void Demuxer::calculateFrameRate()

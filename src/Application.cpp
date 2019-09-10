@@ -6,6 +6,7 @@ namespace vp
 	Application::Application() : 
 	m_demuxer(video::Demuxer())
 	{
+		// TODO: need to overload sf::soundstream and play audio from there!
 		try
 		{
 			m_demuxer.loadFromFile("samples/big_buck_bunny.mp4");
@@ -17,7 +18,8 @@ namespace vp
 			exit(EXIT_FAILURE);
 		}
 
-		m_window.create(sf::VideoMode(m_demuxer.getWidth(), m_demuxer.getHeight()), "Video Player", sf::Style::Close, sf::ContextSettings(0, 0, 8));
+		m_window.create(sf::VideoMode(m_demuxer.getWidth(), m_demuxer.getHeight()), 
+			"Video Player", sf::Style::Close);
 		m_window.setVerticalSyncEnabled(true);
 
 		m_sprite.setTexture(m_demuxer.getTexture());
@@ -41,7 +43,8 @@ namespace vp
 
 		while (m_window.pollEvent(event))
 		{
-			if (event.type == sf::Event::Closed || (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape))
+			if (event.type == sf::Event::Closed || 
+			   (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape))
 			{
 				m_window.close();
 			}
