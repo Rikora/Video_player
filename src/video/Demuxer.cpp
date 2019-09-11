@@ -1,7 +1,7 @@
 #include "Demuxer.hpp"
 #include <iostream>
 
-namespace vp::video
+namespace vp
 {
 	Demuxer::Demuxer() :
 	m_pFormatCtx(NULL),
@@ -33,11 +33,11 @@ namespace vp::video
 		sws_freeContext(m_pSwsContext);
 	}
 
-	bool Demuxer::loadFromFile(const std::string& file)
+	bool Demuxer::loadFromFile(const std::string& filename)
 	{
-		if (avformat_open_input(&m_pFormatCtx, file.c_str(), NULL, NULL) != 0)
+		if (avformat_open_input(&m_pFormatCtx, filename.c_str(), NULL, NULL) != 0)
 		{
-			throw std::runtime_error("Demuxer::loadFromFile - Failed to load: " + file);
+			throw std::runtime_error("Demuxer::loadFromFile - Failed to load: " + filename);
 		}
 
 		if (avformat_find_stream_info(m_pFormatCtx, NULL) < 0)
@@ -46,7 +46,7 @@ namespace vp::video
 		}
 
 		// Print info
-		av_dump_format(m_pFormatCtx, 0, file.c_str(), 0);
+		av_dump_format(m_pFormatCtx, 0, filename.c_str(), 0);
 
 		// Retrieve video and audio stream
 		for (unsigned i = 0; i < m_pFormatCtx->nb_streams; ++i)
@@ -135,18 +135,18 @@ namespace vp::video
 		return m_texture;
 	}
 
-	void Demuxer::createDecoderAndContext(AVStream** stream, AVCodecContext** codecCtx)
+	void Demuxer::createDecoderAndContext(AVStream** ppStream, AVCodecContext** ppCodecCtx)
 	{
-		auto pCodec = avcodec_find_decoder(stream[0]->codecpar->codec_id);
-		*codecCtx = avcodec_alloc_context3(pCodec);
-		avcodec_parameters_to_context(*codecCtx, stream[0]->codecpar);
+		auto pCodec = avcodec_find_decoder(ppStream[0]->codecpar->codec_id);
+		*ppCodecCtx = avcodec_alloc_context3(pCodec);
+		avcodec_parameters_to_context(*ppCodecCtx, ppStream[0]->codecpar);
 
 		if (!pCodec)
 		{
 			throw std::runtime_error("Demuxer::createDecoderAndContext - Unsupported codec");
 		}
 
-		if (avcodec_open2(*codecCtx, pCodec, NULL) < 0)
+		if (avcodec_open2(*ppCodecCtx, pCodec, NULL) < 0)
 		{
 			throw std::runtime_error("Demuxer::createDecoderAndContext - Failed to open codex context");
 		}

@@ -7,9 +7,8 @@ extern "C"
 
 #include <SFML/Graphics.hpp> // TODO: change this to only required headers
 #include <SFML/Audio/SoundStream.hpp>
-#include <string>
 
-namespace vp::video
+namespace vp
 {
 	// TODO: add pause, stop, resume, find functionality?
 	class Demuxer : public sf::SoundStream
@@ -19,10 +18,10 @@ namespace vp::video
 		~Demuxer();
 
 		// sf::SoundStream overloads
-		virtual bool onGetData(Chunk& data) override;
-		inline virtual void onSeek(sf::Time timeOffset) override {};
+		bool onGetData(Chunk& data) override;
+		inline void onSeek(sf::Time timeOffset) override {};
 
-		bool loadFromFile(const std::string& file);
+		bool loadFromFile(const std::string& filename);
 		void update(sf::Time dt);
 		bool isFrameFinished() const;
 		bool isVideoFinished() const;
@@ -33,7 +32,7 @@ namespace vp::video
 		sf::Texture& getTexture();
 
 	private:
-		void createDecoderAndContext(AVStream** stream, AVCodecContext** codecCtx);
+		void createDecoderAndContext(AVStream** ppStream, AVCodecContext** ppCodecCtx);
 		void createSwsContext();
 		void createBuffer();
 		void calculateFrameRate();

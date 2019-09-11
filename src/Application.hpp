@@ -19,6 +19,6 @@ namespace vp
 
 		sf::RenderWindow m_window;
 		sf::Sprite m_sprite;
-		video::Demuxer m_demuxer;
+		Demuxer m_demuxer;
 	};
 }

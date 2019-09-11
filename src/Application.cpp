@@ -4,9 +4,8 @@
 namespace vp
 {
 	Application::Application() : 
-	m_demuxer(video::Demuxer())
+	m_demuxer(Demuxer())
 	{
-		// TODO: need to overload sf::soundstream and play audio from there!
 		try
 		{
 			m_demuxer.loadFromFile("samples/big_buck_bunny.mp4");
