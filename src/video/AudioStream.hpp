@@ -22,11 +22,14 @@ namespace vp
 	private:
 		bool onGetData(Chunk& data) override;
 		void onSeek(sf::Time timeOffset) override;
+		void step(void* data, int& size);
+		int getAVAudioData(void* data, int length);
 		void createDecoderAndContext(AVStream** ppStream, AVCodecContext** ppCodecCtx);
 
 		AVFormatContext* m_pFormatCtx;
 		AVCodecContext* m_pAudioCodecCtx;
 		AVStream* m_pAudioStream;
+		AVFrame* m_pFrame;
 		char* m_pSamples;
 		char* m_pData;
 		size_t m_dataSize;
