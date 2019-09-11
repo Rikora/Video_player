@@ -6,9 +6,7 @@ namespace vp
 	Demuxer::Demuxer() :
 	m_pFormatCtx(NULL),
 	m_pVideoStream(NULL),
-	m_pAudioStream(NULL),
 	m_pVideoCodecCtx(NULL),
-	m_pAudioCodecCtx(NULL),
 	m_pSwsContext(NULL),
 	m_pBuffer(NULL),
 	m_pPrevFrame(NULL),
@@ -28,7 +26,6 @@ namespace vp
 		av_free(m_pCurrentFrame);
 		av_free(m_pPrevFrame);
 		avcodec_close(m_pVideoCodecCtx);
-		avcodec_close(m_pAudioCodecCtx);
 		avformat_close_input(&m_pFormatCtx);
 		sws_freeContext(m_pSwsContext);
 	}
@@ -48,33 +45,25 @@ namespace vp
 		// Print info
 		av_dump_format(m_pFormatCtx, 0, filename.c_str(), 0);
 
-		// Retrieve video and audio stream
+		// Retrieve video stream
 		for (unsigned i = 0; i < m_pFormatCtx->nb_streams; ++i)
 		{
 			if (m_pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
 			{
 				m_pVideoStream = m_pFormatCtx->streams[i];
-				createDecoderAndContext(&m_pVideoStream, &m_pVideoCodecCtx);
-			}
-			else if (m_pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
-			{
-				m_pAudioStream = m_pFormatCtx->streams[i];
-				createDecoderAndContext(&m_pAudioStream, &m_pAudioCodecCtx);
-				initialize(m_pAudioStream->codecpar->channels, m_pAudioStream->codecpar->sample_rate);
+				createDecoderAndContext();
 			}
 		}
 
-		if (!m_pVideoStream || !m_pAudioStream)
+		if (!m_pVideoStream)
 		{
-			throw std::runtime_error("Demuxer::loadFromFile - Failed to locate an existing video/audio stream");
+			throw std::runtime_error("Demuxer::loadFromFile - Failed to locate an existing video stream");
 		}
 
 		calculateFrameRate();
 		createSwsContext();
 		createBuffer();
 		m_texture.create(m_pVideoCodecCtx->width, m_pVideoCodecCtx->height);
-
-		// Note: push a few frames through from the beginning?
 
 		return true;
 	}
@@ -93,11 +82,6 @@ namespace vp
 			m_updateTimer = sf::Time::Zero;
 			step();
 		}
-	}
-
-	bool Demuxer::onGetData(Chunk& data)
-	{
-		return false;
 	}
 
 	bool Demuxer::isFrameFinished() const
@@ -135,18 +119,18 @@ namespace vp
 		return m_texture;
 	}
 
-	void Demuxer::createDecoderAndContext(AVStream** ppStream, AVCodecContext** ppCodecCtx)
+	void Demuxer::createDecoderAndContext()
 	{
-		auto pCodec = avcodec_find_decoder(ppStream[0]->codecpar->codec_id);
-		*ppCodecCtx = avcodec_alloc_context3(pCodec);
-		avcodec_parameters_to_context(*ppCodecCtx, ppStream[0]->codecpar);
+		auto pCodec = avcodec_find_decoder(m_pVideoStream->codecpar->codec_id);
+		m_pVideoCodecCtx = avcodec_alloc_context3(pCodec);
+		avcodec_parameters_to_context(m_pVideoCodecCtx, m_pVideoStream->codecpar);
 
 		if (!pCodec)
 		{
 			throw std::runtime_error("Demuxer::createDecoderAndContext - Unsupported codec");
 		}
 
-		if (avcodec_open2(*ppCodecCtx, pCodec, NULL) < 0)
+		if (avcodec_open2(m_pVideoCodecCtx, pCodec, NULL) < 0)
 		{
 			throw std::runtime_error("Demuxer::createDecoderAndContext - Failed to open codex context");
 		}
